@@ -1,0 +1,144 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Ayush8630sharmaAI/CNN-DIGIT-CLASSIFIER-/blob/main/CNN.1\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "E7ZUEGQEje0x"
+      },
+      "outputs": [],
+      "source": [
+        "import torch\n",
+        "import torch.nn as nn\n",
+        "import torch.optim as optim\n",
+        "from torchvision import datasets, transforms\n",
+        "from torch.utils.data import DataLoader"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "FezFmhfXy5cV"
+      },
+      "outputs": [],
+      "source": [
+        "transform = transforms.ToTensor()\n",
+        "train_dataset = datasets.MNIST(root ='./data', train = True, download = True, transform = transform)\n",
+        "train_loader = DataLoader(dataset=train_dataset, batch_size=64, shuffle=True)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "v2W2MhPw004b"
+      },
+      "outputs": [],
+      "source": [
+        "class DigitBrain(nn.Module):  # <-- Changed here\n",
+        "    def __init__(self):\n",
+        "        super().__init__()\n",
+        "\n",
+        "        self.feature_extractor = nn.Sequential(\n",
+        "            nn.Conv2d(1, 32, kernel_size=3, padding=1), nn.ReLU(),\n",
+        "            nn.BatchNorm2d(32),\n",
+        "            nn.MaxPool2d(2, 2),\n",
+        "\n",
+        "            nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU(),\n",
+        "            nn.BatchNorm2d(64),\n",
+        "            nn.MaxPool2d(2, 2),\n",
+        "\n",
+        "            nn.Conv2d(64, 128, kernel_size=3, padding=1), nn.ReLU(),\n",
+        "            nn.BatchNorm2d(128),\n",
+        "            nn.MaxPool2d(2, 2),\n",
+        "            nn.Dropout(0.25),\n",
+        "\n",
+        ")\n",
+        "        self.fc = nn.Linear(128 * 3 * 3, 10)\n",
+        "\n",
+        "    def forward(self, x):\n",
+        "        x = self.feature_extractor(x)\n",
+        "        x = x.view(x.size(0), -1)\n",
+        "        return self.fc(x)\n",
+        "\n",
+        "model = DigitBrain()"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "kJIxxlxk2ZWH"
+      },
+      "outputs": [],
+      "source": [
+        "loss = nn.CrossEntropyLoss()\n",
+        "optimizer = optim.Adam( model.parameters(), lr = 0.001)\n",
+        "for epoch in range(10):\n",
+        "    model.train()\n",
+        "    for batch_idx, (images, labels) in enumerate(train_loader):\n",
+        "        optimizer.zero_grad()\n",
+        "        output = model(images)\n",
+        "        x_y = loss(output, labels)\n",
+        "        x_y.backward()\n",
+        "        optimizer.step()"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "X5V4l3xwPGRO"
+      },
+      "outputs": [],
+      "source": [
+        "test_dataset = datasets.MNIST(root='./data', train=False, transform=transform)\n",
+        "test_loader = DataLoader(dataset=test_dataset, batch_size=64, shuffle=False)\n",
+        "model.eval()\n",
+        "\n",
+        "correct = 0\n",
+        "total = 0\n",
+        "\n",
+        "# 3. Test without updating any filters\n",
+        "with torch.no_grad():\n",
+        "    for images, labels in test_loader:\n",
+        "        outputs = model(images)\n",
+        "        _, predicted = torch.max(outputs.data, 1)\n",
+        "        total += labels.size(0)\n",
+        "        correct += (predicted == labels).sum().item()\n",
+        "\n",
+        "# 4. Calculate final score\n",
+        "accuracy = 100 * correct / total\n",
+        "print(f\"Final Test Accuracy: {accuracy:.2f}%\")"
+      ]
+    }
+  ],
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "mount_file_id": "1P6vXlRabHjw24cZbNnLwz0As9fzL_UCC",
+      "authorship_tag": "ABX9TyNCBANncdrKZU7BxQS5EMP8",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "display_name": "Python 3",
+      "name": "python3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 0
+}
